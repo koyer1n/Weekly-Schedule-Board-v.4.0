@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Schedule Board</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+    </script>
+    <script>
+        let isEditor = false;
+
+        function authenticate() {
+            const password = prompt("Enter the password to edit:");
+            if (password === "asparkofdecency") {
+                isEditor = true;
+                document.querySelectorAll('.editable').forEach(el => el.contentEditable = "true");
+                document.getElementById("saveButton").style.display = "block";
+            } else {
+                alert("Incorrect password.");
+            }
+        }
+
+        function saveSchedule() {
+            if (!isEditor) return;
+            const schedule = {};
+            document.querySelectorAll(".day-box").forEach(box => {
+                schedule[box.id] = box.innerHTML;
+            });
+            const month = document.getElementById("month").innerText;
+            const week = document.getElementById("week").innerText;
+            const lastUpdated = new Date().toLocaleString();
+            
+            db.ref("schedule").set({ schedule, month, week, lastUpdated }, (error) => {
+                if (error) {
+                    alert("Failed to save schedule.");
+                } else {
+                    document.getElementById("lastUpdated").innerText = `Last Updated: ${lastUpdated}`;
+                    alert("Schedule saved successfully.");
+                }
+            });
+        }
+
+        function loadSchedule() {
+            db.ref("schedule").on("value", snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    for (const [key, value] of Object.entries(data.schedule)) {
+                        document.getElementById(key).innerHTML = value;
+                    }
+                    document.getElementById("month").innerText = data.month;
+                    document.getElementById("week").innerText = data.week;
+                    document.getElementById("lastUpdated").innerText = `Last Updated: ${data.lastUpdated}`;
+                }
+            });
+        }
+
+        window.onload = loadSchedule;
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-6">
+    <h1 class="text-4xl font-bold mb-4">Weekly Schedule Board</h1>
+    <div class="mb-2 text-lg">Month: <span id="month" class="editable font-semibold">March</span></div>
+    <div class="mb-4 text-lg">Week: <span id="week" class="editable font-semibold">1</span></div>
+    <button onclick="authenticate()" class="px-4 py-2 bg-blue-500 text-white rounded mb-4">Edit</button>
+    <div class="flex flex-col bg-white p-6 rounded shadow-lg w-full max-w-lg">
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Monday</h2><div id="monday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Tuesday</h2><div id="tuesday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Wednesday</h2><div id="wednesday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Thursday</h2><div id="thursday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Friday</h2><div id="friday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Saturday</h2><div id="saturday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+        <div class="text-center mb-4"><h2 class="text-xl font-bold">Sunday</h2><div id="sunday" class="day-box editable text-lg p-4 border rounded min-h-[100px] bg-gray-50"></div></div>
+    </div>
+    <p id="lastUpdated" class="mt-4 text-sm text-gray-500"></p>
+    <button id="saveButton" onclick="saveSchedule()" class="px-4 py-2 bg-green-500 text-white rounded mt-4 hidden">Save</button>
+</body>
+</html>
